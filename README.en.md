@@ -49,20 +49,22 @@ fabric, it just deals with rectangles and measurements.
 ## The problem, formulated
 
 > Input: a production order (list of rectangular pieces, each with a size
-> and whether it can be rotated) and the width of the TNT roll.
+> and whether it can be rotated) and the width of the raw material roll.
 > Output: the position of each piece on the roll, minimizing the roll
 > length consumed.
 
-The roll has a **fixed width** (1600mm is common) and continuous length.
-That changes the objective compared to classic bin packing: it's not
-about using fewer sheets, it's about **unrolling less linear length**. The
-empty strip left on the side was already paid for along with the rest.
+Cutting from a roll shows up across materials: fabric, paper, vinyl, thin
+sheet metal, synthetic leather. The roll has a **fixed width** and
+continuous length, which changes the objective compared to classic bin
+packing: it's not about using fewer sheets, it's about **unrolling less
+linear length**. The empty strip left on the side was already paid for
+along with the rest.
 
-One constraint comes from the material, not the algorithm: **TNT fabric
-has a manufacturing direction.** Rotating a piece 90 degrees changes how it
-stretches and resists, so a gown piece that needs to stretch along the
-body's direction cannot be rotated, while an internal packaging piece can.
-This lives in `Peca.pode_girar`, and the validator rejects any layout that
+A constraint common to this kind of material, not the algorithm itself:
+**a lot of roll material has a manufacturing direction** (fabric grain,
+sheet metal grain, leather grain). Rotating a piece 90 degrees changes how
+it stretches or resists, so not every piece can be freely rotated. This
+lives in `Peca.pode_girar`, and the validator rejects any layout that
 rotates what shouldn't be rotated.
 
 ---

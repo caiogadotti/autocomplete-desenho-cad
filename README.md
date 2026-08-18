@@ -48,20 +48,23 @@ saber que a peça é de tecido, só lida com retângulo e medida.
 ## O problema, formulado
 
 > Entrada: um pedido de produção (lista de peças retangulares, cada uma
-> com medida e se pode ou não ser girada) e a largura do rolo de TNT.
-> Saída: a posição de cada peça no rolo, minimizando o comprimento de
-> rolo consumido.
+> com medida e se pode ou não ser girada) e a largura do rolo de
+> matéria-prima. Saída: a posição de cada peça no rolo, minimizando o
+> comprimento de rolo consumido.
 
-O rolo tem **largura fixa** (1600mm é comum) e comprimento contínuo. Isso
-muda o objetivo em relação ao bin packing clássico: não se trata de usar
-menos chapas, e sim de **desenrolar menos metro linear**. A faixa vazia
-que sobra na lateral foi paga junto com o resto.
+Corte a partir de rolo aparece em vários materiais: tecido, papel, vinil,
+chapa metálica fina, couro sintético. O rolo tem **largura fixa** e
+comprimento contínuo, o que muda o objetivo em relação ao bin packing
+clássico: não se trata de usar menos chapas, e sim de **desenrolar menos
+metro linear**. A faixa vazia que sobra na lateral foi paga junto com o
+resto.
 
-Uma restrição que vem do material, não do algoritmo: **TNT tem sentido de
-fabricação.** Girar uma peça 90 graus muda como ela estica e resiste, então
-peça de avental que precisa esticar no sentido do corpo não pode ser
-rotacionada, enquanto peça de embalagem interna pode. Isso está em
-`Peca.pode_girar` e o validador reprova layout que gire o que não podia.
+Uma restrição comum nesse tipo de material, não do algoritmo em si:
+**muito material de rolo tem sentido de fabricação** (fibra do tecido,
+veio da chapa, grão do couro). Girar uma peça 90 graus muda como ela
+estica ou resiste, então nem toda peça pode ser rotacionada livremente.
+Isso está em `Peca.pode_girar` e o validador reprova layout que gire o
+que não podia.
 
 ---
 
