@@ -199,7 +199,8 @@ python scripts/comparar_heuristicas.py
 │   ├── cad/
 │   │   └── dxf.py            reads/writes DXF (real CAD format, via ezdxf)
 │   └── ia/
-│       └── sugestor.py       matches raw/extracted measurements against the catalog
+│       ├── sugestor.py       piece autocomplete, from one edge or from a full closing
+│       └── historico.py      history of drawn pieces, persisted to disk
 ├── scripts/
 │   ├── comparar_heuristicas.py   measured benchmark, with validation
 │   ├── avaliar_extrator.py       recall/precision/error of the vision extractor
@@ -209,19 +210,31 @@ python scripts/comparar_heuristicas.py
 └── docs/
 ```
 
-### AI-assisted flow
+### AI-assisted drawing autocomplete
 
-The original request was "AI integration with CAD, learning from the
-user." The first version of that is the most honest one that can be
-validated without a real technical-drawing dataset: `src/ia/sugestor.py`
-takes a raw measurement (from a rectangle extracted out of a sketch/photo,
-via `src/visao/extrator.py`, or from a handful of drawn points) and
-matches it against the catalog of pieces the factory already cuts
-(`src/modelo/catalogo.py`), suggesting the exact catalog measurement when
-the distance is small enough to be drawing imprecision rather than a new
-piece. It respects `pode_girar`: a piece whose manufacturing direction
-matters is never suggested in an orientation it can't actually take, even
-if the raw measurement matches it rotated.
+The original request was "AI integration with CAD, with drawing
+assistance, learning from the user." `src/ia/sugestor.py` is the first
+version of that, the most honest one that can be validated without a real
+technical-drawing dataset: instead of just recognizing a catalog product,
+it tries to predict the rest of a piece **before it's finished**.
+
+- `sugerir_por_uma_aresta()` is the real autocomplete: the user has only
+  drawn one edge, the piece doesn't exist yet, and the function returns a
+  ranked list of how it's likely to end up.
+- `sugerir_fechamento()` covers the case where both dimensions are already
+  drawn (or extracted from a sketch/photo via `src/visao/extrator.py`) and
+  the raw measurement needs to become an exact one.
+
+What makes this learn from the user, not just recognize a fixed product
+list, is `src/ia/historico.py`: every piece drawn and confirmed gets
+recorded in a history persisted to disk, which both searches above check
+**before** the factory catalog (`src/modelo/catalogo.py`) and wins on a
+tie. A measurement the user draws every week but that isn't a catalog
+product becomes recognized starting the second time.
+
+In both cases, it respects `pode_girar`: a piece whose manufacturing
+direction matters is never suggested in an orientation it can't actually
+take, even if the raw measurement matches it rotated.
 
 ```bash
 python scripts/sugerir_rascunho.py rascunho.png --escala 0.12

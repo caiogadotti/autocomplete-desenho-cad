@@ -2,9 +2,9 @@
 
 Fecha o fluxo do módulo `src/ia/sugestor.py` num comando de terminal: em vez
 de desenhar cada peça com precisão, o usuário desenha aproximado, tira uma
-foto ou exporta a imagem, e este comando devolve a medida de catálogo mais
-provável para cada retângulo encontrado, junto com a confiança do casamento
-e a peça que ficou de fora do catálogo (medida nova ou orientação inválida).
+foto ou exporta a imagem, e este comando devolve a medida mais provável para
+cada retângulo encontrado (do histórico do usuário ou do catálogo da
+fábrica), junto com a confiança do casamento e a origem da sugestão.
 
 Uso:
     python scripts/sugerir_rascunho.py rascunho.png --escala 0.12
@@ -22,7 +22,7 @@ from src.ia.sugestor import sugerir_pecas_de_rascunho
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Sugere peças de catálogo a partir de um rascunho/foto.")
+    parser = argparse.ArgumentParser(description="Sugere peças a partir de um rascunho/foto, por histórico e catálogo.")
     parser.add_argument("imagem", help="arquivo de imagem (png/jpg) com o rascunho")
     parser.add_argument(
         "--escala", type=float, default=0.12,
@@ -30,7 +30,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--tolerancia", type=float, default=15.0,
-        help="tolerância em mm para casar com o catálogo (padrão: 15.0)",
+        help="tolerância em mm para casar com histórico/catálogo (padrão: 15.0)",
     )
     args = parser.parse_args()
 
@@ -39,7 +39,7 @@ def main() -> None:
         print(f"não consegui ler a imagem: {args.imagem}", file=sys.stderr)
         raise SystemExit(1)
 
-    sugestoes = sugerir_pecas_de_rascunho(imagem, args.escala, args.tolerancia)
+    sugestoes = sugerir_pecas_de_rascunho(imagem, args.escala, tolerancia_mm=args.tolerancia)
 
     if not sugestoes:
         print("nenhum retângulo encontrado no rascunho")
@@ -47,14 +47,14 @@ def main() -> None:
 
     print(f"{len(sugestoes)} peça(s) encontrada(s):\n")
     for i, s in enumerate(sugestoes, start=1):
-        if s.origem == "catalogo":
+        if s.origem != "bruto":
             girada = " (girada)" if s.girada else ""
             print(
-                f"  {i}. {s.largura_mm}x{s.altura_mm}mm -> '{s.nome_catalogo}'{girada}, "
-                f"confiança {s.confianca:.0%}"
+                f"  {i}. {s.largura_mm}x{s.altura_mm}mm -> '{s.nome}'{girada} "
+                f"[{s.origem}], confiança {s.confianca:.0%}"
             )
         else:
-            print(f"  {i}. {s.largura_mm}x{s.altura_mm}mm -> peça nova, sem casamento no catálogo")
+            print(f"  {i}. {s.largura_mm}x{s.altura_mm}mm -> peça nova, sem casamento conhecido")
 
 
 if __name__ == "__main__":

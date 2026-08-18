@@ -197,7 +197,8 @@ python scripts/comparar_heuristicas.py
 │   ├── cad/
 │   │   └── dxf.py            lê/escreve DXF (formato real de CAD, via ezdxf)
 │   └── ia/
-│       └── sugestor.py       casa medida bruta/extraída com o catálogo
+│       ├── sugestor.py       autocomplete de peça, por uma aresta ou por fechamento
+│       └── historico.py      histórico de peças desenhadas, persistido em disco
 ├── scripts/
 │   ├── comparar_heuristicas.py   benchmark medido, com validação
 │   ├── avaliar_extrator.py       recall/precisão/erro do extrator de visão
@@ -207,18 +208,31 @@ python scripts/comparar_heuristicas.py
 └── docs/
 ```
 
-### Fluxo assistido por IA
+### Autocomplete de desenho assistido por IA
 
-O pedido original era "integração de IA com o CAD, aprendendo com o
-usuário". A primeira versão disso é a mais honesta que dá para validar sem
-dataset de desenho real: `src/ia/sugestor.py` pega uma medida bruta (de um
-retângulo extraído de rascunho/foto, via `src/visao/extrator.py`, ou de
-poucos pontos desenhados) e casa com o catálogo de peças que a fábrica já
-corta (`src/modelo/catalogo.py`), sugerindo a medida exata quando a
-distância é pequena o bastante para ser imprecisão de desenho, não peça
-nova. Respeita `pode_girar`: uma peça cujo sentido de fabricação do TNT
-importa não é sugerida numa orientação que ela não pode assumir de verdade,
-mesmo que a medida bruta bata com ela girada.
+O pedido original era "integração de IA com o CAD, com auxílio de desenho,
+aprendendo com o usuário". `src/ia/sugestor.py` é a primeira versão disso,
+a mais honesta que dá para validar sem dataset de desenho real: em vez de
+só reconhecer produto de catálogo, ele tenta prever o resto de uma peça
+**antes dela estar pronta**.
+
+- `sugerir_por_uma_aresta()` é o autocomplete de verdade: o usuário desenhou
+  só um lado, a peça ainda não existe, e a função devolve uma lista
+  ranqueada de como ela provavelmente termina.
+- `sugerir_fechamento()` cobre o caso em que as duas dimensões já foram
+  desenhadas (ou extraídas de um rascunho/foto via `src/visao/extrator.py`)
+  e a medida bruta precisa virar uma medida exata.
+
+O que faz isso aprender com o usuário, e não só reconhecer produto fixo, é
+`src/ia/historico.py`: toda peça desenhada e confirmada é registrada num
+histórico persistido em disco, que entra nas duas buscas acima **antes**
+do catálogo da fábrica (`src/modelo/catalogo.py`) e vence em caso de
+empate. Uma medida que o usuário usa toda semana mas que não é produto de
+catálogo passa a ser reconhecida da segunda vez em diante.
+
+Em ambos os casos, respeita `pode_girar`: uma peça cujo sentido de
+fabricação do TNT importa não é sugerida numa orientação que ela não pode
+assumir de verdade, mesmo que a medida bata com ela girada.
 
 ```bash
 python scripts/sugerir_rascunho.py rascunho.png --escala 0.12
