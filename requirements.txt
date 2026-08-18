@@ -1,0 +1,8 @@
+# Interoperabilidade com CAD: leitura e escrita de DXF, o formato de troca
+# que AutoCAD, FreeCAD, SolidWorks, Fusion e LibreCAD leem e escrevem.
+ezdxf>=1.4
+
+# Extração de peças a partir de desenho em imagem (rota alternativa ao DXF,
+# para desenho escaneado ou legado que não tem vetor).
+opencv-python>=4.8
+numpy>=1.26
