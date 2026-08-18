@@ -1,12 +1,14 @@
 <div align="center">
 
-# Otimizador de Corte Industrial
+# Autocomplete de Desenho para CAD
 
-**Quanto de TNT sobra no chão, e como o algoritmo decide isso.**
+**IA que sugere o resto de uma peça antes dela estar pronta, aprendendo com quem desenha.**
 
-Motor de nesting 2D para corte de peças retangulares em rolo de matéria-prima,
-com heurísticas comparadas de forma medida e um validador que impede número
-bonito de layout inválido.
+Ferramenta de auxílio a desenho para CAD: sugere o fechamento de uma peça a
+partir de só um traço, casando com o histórico de quem desenha ou com um
+catálogo de referência, indo e voltando por DXF real. Não é específica de
+nenhum material ou indústria; o corte de rolo de tecido é só o primeiro
+domínio usado para validar (leia mais abaixo).
 
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://www.python.org)
 
@@ -20,19 +22,27 @@ bonito de layout inválido.
 
 ## Por que esse projeto
 
-Duas experiências minhas se cruzam aqui. Na Systra passei 6 meses fazendo
-desenho técnico em AutoCAD, onde o que existe na tela é geometria com
-restrição. Na Descartee, indústria de descartáveis hospitalares, o TNT
-chega em rolo e vira avental, campo cirúrgico e touca, e o que sobra
-entre uma peça e outra é dinheiro que já foi comprado e virou resíduo.
+Na Systra passei 6 meses fazendo desenho técnico em AutoCAD, onde o que
+existe na tela é geometria com restrição, redesenhada peça por peça sempre
+que o traço não sai exato de primeira. A pergunta por trás deste projeto é
+genérica pra qualquer CAD: **o sistema pode aprender o que a pessoa
+provavelmente quer desenhar, e sugerir o resto antes dela terminar?**
 
-O problema de decidir **como dispor as peças no rolo** para sobrar o menos
-possível é o *cutting stock problem*, NP-difícil. Não existe algoritmo que
-ache o ótimo em tempo razoável para um pedido de produção, então a
-indústria usa heurística. A pergunta que este projeto responde não é
-"qual a melhor disposição", é uma mais honesta: **entre as heurísticas
-que existem, qual entrega mais aproveitamento neste tipo de peça, e
-quanto ela cobra por isso.**
+`src/ia/` responde isso sem depender de rede neural nem dataset de
+desenho real (que não existe pronto pra esse problema): casa o traço
+parcial contra um histórico que cresce com o próprio uso, ou contra um
+catálogo de referência, e sugere o fechamento mais provável, respeitando
+restrições geométricas de cada domínio (ver `pode_girar` abaixo).
+
+Pra validar isso com números de verdade, e não só com a promessa de que
+"deveria funcionar", o projeto inclui um domínio completo construído do
+zero: nesting de corte de peças retangulares num rolo de matéria-prima
+(motivado pelo corte de TNT que acompanho na Descartee). Esse domínio tem
+seu próprio problema difícil, o *cutting stock problem*, NP-difícil, e a
+seção de heurísticas abaixo mede isso separadamente. Mas ele é um caso de
+uso do autocomplete, não a definição do projeto: o mesmo `src/ia/` serve
+pra qualquer peça 2D que precise ser fechada a partir de traço parcial,
+não só corte de tecido.
 
 ---
 
@@ -230,9 +240,9 @@ do catálogo da fábrica (`src/modelo/catalogo.py`) e vence em caso de
 empate. Uma medida que o usuário usa toda semana mas que não é produto de
 catálogo passa a ser reconhecida da segunda vez em diante.
 
-Em ambos os casos, respeita `pode_girar`: uma peça cujo sentido de
-fabricação do TNT importa não é sugerida numa orientação que ela não pode
-assumir de verdade, mesmo que a medida bata com ela girada.
+Em ambos os casos, respeita `pode_girar`: quando o domínio tem uma
+restrição de orientação (no exemplo de corte de tecido, o sentido de
+fabricação), a peça não é sugerida girada mesmo que a medida bata assim.
 
 ```bash
 python scripts/sugerir_rascunho.py rascunho.png --escala 0.12
@@ -244,9 +254,12 @@ python scripts/sugerir_rascunho.py rascunho.png --escala 0.12
 
 **Curso:** Engenharia de Sistemas Ciber-Físicos, PUC-SP
 
-Domínio baseado em experiência profissional: 6 meses na Systra (desenho
-técnico em AutoCAD) e trabalho com corte de TNT na Descartee, indústria de
-descartáveis hospitalares.
+Motivação vem de experiência profissional: 6 meses na Systra fazendo
+desenho técnico em AutoCAD, onde a ideia do autocomplete nasceu. O domínio
+de validação (nesting de corte de rolo) usa como referência o trabalho com
+TNT na Descartee, indústria de descartáveis hospitalares, mas a ferramenta
+em si não é específica de tecido nem de nenhuma indústria.
 
-As medidas de peça no catálogo são de ordem de grandeza plausível para o
-setor, não dados de produto específico de nenhuma empresa.
+As medidas de peça no catálogo de exemplo são de ordem de grandeza
+plausível para o setor, não dados de produto específico de nenhuma
+empresa.

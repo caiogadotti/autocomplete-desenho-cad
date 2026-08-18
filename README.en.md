@@ -1,12 +1,14 @@
 <div align="center">
 
-# Industrial Cutting Optimizer
+# CAD Drawing Autocomplete
 
-**How much TNT fabric ends up as waste, and how the algorithm decides that.**
+**AI that suggests the rest of a piece before it's finished, learning from whoever is drawing.**
 
-2D nesting engine for cutting rectangular pieces from a roll of raw
-material, with heuristics compared through measurement and a validator
-that stops a pretty number from hiding an invalid layout.
+A drawing-assistance tool for CAD: suggests how a piece closes from a
+single stroke, matching against the drawer's own history or a reference
+catalog, round-tripped through real DXF. Not specific to any material or
+industry; fabric-roll cutting is just the first domain used to validate it
+(read more below).
 
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://www.python.org)
 
@@ -20,19 +22,27 @@ that stops a pretty number from hiding an invalid layout.
 
 ## Why this project
 
-Two of my own experiences meet here. At Systra I spent 6 months doing
-technical drawing in AutoCAD, where everything on screen is constrained
-geometry. At Descartee, a disposable hospital-supply manufacturer, TNT
-fabric arrives on a roll and becomes surgical gowns, drapes, and caps, and
-whatever is left between one piece and the next is money already spent
-turned into scrap.
+At Systra I spent 6 months doing technical drawing in AutoCAD, where
+everything on screen is constrained geometry, redrawn piece by piece every
+time a stroke didn't come out exact the first time. The question behind
+this project is generic to any CAD tool: **can the system learn what a
+person is likely trying to draw, and suggest the rest before they finish?**
 
-Deciding **how to arrange pieces on the roll** to minimize what is left
-over is the cutting stock problem, NP-hard. No algorithm finds the optimum
-in reasonable time for a real production order, so the industry relies on
-heuristics. This project answers a more honest question than "what's the
-best layout": **among the heuristics that exist, which one delivers more
-usable yield for this kind of piece, and what does it cost to get there.**
+`src/ia/` answers that without a neural network or a real drawing dataset
+(none exists ready-made for this problem): it matches a partial stroke
+against a history that grows with actual use, or against a reference
+catalog, and suggests the most likely closing, respecting each domain's
+geometric constraints (see `pode_girar` below).
+
+To validate that with real numbers instead of just the promise that "it
+should work," the project includes one full domain built from scratch:
+nesting for cutting rectangular pieces from a roll of raw material
+(motivated by the TNT fabric cutting I'm around at Descartee). That domain
+has its own hard problem, the cutting stock problem, NP-hard, and the
+heuristics section below measures it separately. But it's a use case for
+the autocomplete, not the project's definition: the same `src/ia/` serves
+any 2D piece that needs closing from a partial stroke, not just fabric
+cutting.
 
 ---
 
@@ -232,9 +242,10 @@ recorded in a history persisted to disk, which both searches above check
 tie. A measurement the user draws every week but that isn't a catalog
 product becomes recognized starting the second time.
 
-In both cases, it respects `pode_girar`: a piece whose manufacturing
-direction matters is never suggested in an orientation it can't actually
-take, even if the raw measurement matches it rotated.
+In both cases, it respects `pode_girar`: when a domain has an orientation
+constraint (in the fabric-cutting example, the manufacturing grain
+direction), the piece is never suggested rotated even if the measurement
+would match that way.
 
 ```bash
 python scripts/sugerir_rascunho.py rascunho.png --escala 0.12
@@ -246,9 +257,11 @@ python scripts/sugerir_rascunho.py rascunho.png --escala 0.12
 
 **Course:** Cyber-Physical Systems Engineering, PUC-SP
 
-Domain grounded in professional experience: 6 months at Systra (technical
-drawing in AutoCAD) and work with TNT fabric cutting at Descartee, a
-disposable hospital-supply manufacturer.
+Motivation comes from professional experience: 6 months at Systra doing
+technical drawing in AutoCAD, where the autocomplete idea was born. The
+validation domain (roll-cutting nesting) uses TNT fabric work at
+Descartee, a disposable hospital-supply manufacturer, as its reference,
+but the tool itself isn't specific to fabric or any single industry.
 
-Catalog piece measurements are plausible order-of-magnitude values for the
-industry, not specific product data from any company.
+Example catalog piece measurements are plausible order-of-magnitude
+values for the industry, not specific product data from any company.
