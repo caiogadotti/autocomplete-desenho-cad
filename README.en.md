@@ -2,13 +2,14 @@
 
 # CAD Drawing Autocomplete
 
-**AI that suggests the rest of a piece before it's finished, learning from whoever is drawing.**
+A drawing-assistance tool for CAD. You draw one side of a piece and it
+suggests how the piece is likely to finish, comparing against what you've
+drawn before or against a reference catalog. Reads and writes real DXF, so
+you can open the result in any CAD software.
 
-A drawing-assistance tool for CAD: suggests how a piece closes from a
-single stroke, matching against the drawer's own history or a reference
-catalog, round-tripped through real DXF. Not specific to any material or
-industry; fabric-roll cutting is just the first domain used to validate it
-(read more below).
+Not built for a specific material. The fabric-roll cutting example in this
+README is just the domain I used to check whether the idea holds up with
+real numbers, not the point of the project.
 
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://www.python.org)
 
@@ -22,27 +23,26 @@ industry; fabric-roll cutting is just the first domain used to validate it
 
 ## Why this project
 
-At Systra I spent 6 months doing technical drawing in AutoCAD, where
-everything on screen is constrained geometry, redrawn piece by piece every
-time a stroke didn't come out exact the first time. The question behind
-this project is generic to any CAD tool: **can the system learn what a
-person is likely trying to draw, and suggest the rest before they finish?**
+At Systra I spent 6 months drawing in AutoCAD. A lot of that time wasn't
+designing anything new, it was redrawing a piece similar to one I'd
+already made, just adjusting the measurement. That kept bugging me: the
+CAD software knows what I drew before, why doesn't it suggest the rest on
+its own?
 
-`src/ia/` answers that without a neural network or a real drawing dataset
-(none exists ready-made for this problem): it matches a partial stroke
-against a history that grows with actual use, or against a reference
-catalog, and suggests the most likely closing, respecting each domain's
-geometric constraints (see `pode_girar` below).
+There's no ready-made technical-drawing dataset to train a neural network
+on this, so I built it without one. `src/ia/` keeps a history of what's
+been drawn and compares a new stroke against it (and against a catalog, if
+the history is still empty). If it matches within a tolerance, it
+suggests closing the piece at that measurement.
 
-To validate that with real numbers instead of just the promise that "it
-should work," the project includes one full domain built from scratch:
-nesting for cutting rectangular pieces from a roll of raw material
-(motivated by the TNT fabric cutting I'm around at Descartee). That domain
-has its own hard problem, the cutting stock problem, NP-hard, and the
-heuristics section below measures it separately. But it's a use case for
-the autocomplete, not the project's definition: the same `src/ia/` serves
-any 2D piece that needs closing from a partial stroke, not just fabric
-cutting.
+To know if this actually works instead of just "sounding good in a
+README," I needed a real problem to test it on. I used cutting nesting:
+fit rectangular pieces onto a fabric roll while wasting as little as
+possible. That's the cutting stock problem, NP-hard, it has literature
+behind it, and yield/heuristics are measurable. Why that domain: I see TNT
+fabric cutting at Descartee, so I know the problem firsthand. But the
+autocomplete itself (`src/ia/`) doesn't know or need to know the piece is
+fabric, it just deals with rectangles and measurements.
 
 ---
 
@@ -220,32 +220,27 @@ python scripts/comparar_heuristicas.py
 └── docs/
 ```
 
-### AI-assisted drawing autocomplete
+### The autocomplete itself
 
-The original request was "AI integration with CAD, with drawing
-assistance, learning from the user." `src/ia/sugestor.py` is the first
-version of that, the most honest one that can be validated without a real
-technical-drawing dataset: instead of just recognizing a catalog product,
-it tries to predict the rest of a piece **before it's finished**.
+`src/ia/sugestor.py` has two functions, for the two moments where there's
+something to suggest:
 
-- `sugerir_por_uma_aresta()` is the real autocomplete: the user has only
-  drawn one edge, the piece doesn't exist yet, and the function returns a
-  ranked list of how it's likely to end up.
-- `sugerir_fechamento()` covers the case where both dimensions are already
-  drawn (or extracted from a sketch/photo via `src/visao/extrator.py`) and
-  the raw measurement needs to become an exact one.
+- `sugerir_por_uma_aresta()`: only one edge is drawn, the piece doesn't
+  exist yet. Returns a ranked list of how it's likely to end up. This is
+  the real autocomplete, suggesting before the drawing is done.
+- `sugerir_fechamento()`: both dimensions are already drawn (or came from
+  a sketch/photo via `src/visao/extrator.py`), and the function just
+  snaps the raw measurement to the closest known one.
 
-What makes this learn from the user, not just recognize a fixed product
-list, is `src/ia/historico.py`: every piece drawn and confirmed gets
-recorded in a history persisted to disk, which both searches above check
-**before** the factory catalog (`src/modelo/catalogo.py`) and wins on a
-tie. A measurement the user draws every week but that isn't a catalog
-product becomes recognized starting the second time.
+`src/ia/historico.py` keeps every piece the user draws and confirms. That
+history gets checked before the fixed catalog (`src/modelo/catalogo.py`)
+in both functions above, so it wins on a tie. That's what makes a
+measurement you draw every week, even one that isn't a catalog product,
+get recognized starting the second time.
 
-In both cases, it respects `pode_girar`: when a domain has an orientation
-constraint (in the fabric-cutting example, the manufacturing grain
-direction), the piece is never suggested rotated even if the measurement
-would match that way.
+Both respect `pode_girar`: if the domain has an orientation constraint (in
+the fabric example, the manufacturing grain direction), the piece never
+gets suggested rotated even if the measurement would match that way.
 
 ```bash
 python scripts/sugerir_rascunho.py rascunho.png --escala 0.12
@@ -257,11 +252,10 @@ python scripts/sugerir_rascunho.py rascunho.png --escala 0.12
 
 **Course:** Cyber-Physical Systems Engineering, PUC-SP
 
-Motivation comes from professional experience: 6 months at Systra doing
-technical drawing in AutoCAD, where the autocomplete idea was born. The
-validation domain (roll-cutting nesting) uses TNT fabric work at
-Descartee, a disposable hospital-supply manufacturer, as its reference,
-but the tool itself isn't specific to fabric or any single industry.
+The idea came from 6 months drawing in AutoCAD at Systra. The domain used
+to test it (roll-cutting nesting) is based on the TNT fabric cutting I see
+at Descartee, but that's just the test scenario, the tool doesn't know or
+need to know fabric exists.
 
-Example catalog piece measurements are plausible order-of-magnitude
-values for the industry, not specific product data from any company.
+Example catalog measurements are just plausible order-of-magnitude values
+for the industry, not product data from any specific company.

@@ -2,13 +2,14 @@
 
 # Autocomplete de Desenho para CAD
 
-**IA que sugere o resto de uma peça antes dela estar pronta, aprendendo com quem desenha.**
+Ferramenta de auxílio a desenho para CAD. Você desenha um lado da peça e o
+sistema sugere como ela provavelmente termina, comparando com o que você
+já desenhou antes ou com um catálogo de referência. Lê e escreve DXF de
+verdade, então dá pra abrir o resultado em qualquer CAD.
 
-Ferramenta de auxílio a desenho para CAD: sugere o fechamento de uma peça a
-partir de só um traço, casando com o histórico de quem desenha ou com um
-catálogo de referência, indo e voltando por DXF real. Não é específica de
-nenhum material ou indústria; o corte de rolo de tecido é só o primeiro
-domínio usado para validar (leia mais abaixo).
+Não é feita pra um material específico. O corte de rolo de tecido que
+aparece no README é só o domínio que usei pra testar se a ideia funciona
+com números reais, não o propósito do projeto.
 
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://www.python.org)
 
@@ -22,27 +23,25 @@ domínio usado para validar (leia mais abaixo).
 
 ## Por que esse projeto
 
-Na Systra passei 6 meses fazendo desenho técnico em AutoCAD, onde o que
-existe na tela é geometria com restrição, redesenhada peça por peça sempre
-que o traço não sai exato de primeira. A pergunta por trás deste projeto é
-genérica pra qualquer CAD: **o sistema pode aprender o que a pessoa
-provavelmente quer desenhar, e sugerir o resto antes dela terminar?**
+Na Systra passei 6 meses desenhando em AutoCAD. Boa parte do tempo não era
+projetar nada novo, era redesenhar peça parecida com outra que eu já tinha
+feito, só ajustando a medida. Isso ficou martelando: o CAD sabe o que eu
+desenhei antes, por que ele não sugere o resto sozinho?
 
-`src/ia/` responde isso sem depender de rede neural nem dataset de
-desenho real (que não existe pronto pra esse problema): casa o traço
-parcial contra um histórico que cresce com o próprio uso, ou contra um
-catálogo de referência, e sugere o fechamento mais provável, respeitando
-restrições geométricas de cada domínio (ver `pode_girar` abaixo).
+Não tinha dataset de desenho técnico pronto pra treinar rede neural nisso,
+então fiz sem. `src/ia/` guarda um histórico do que já foi desenhado e
+compara o traço novo contra ele (e contra um catálogo, se o histórico
+ainda estiver vazio). Se bater dentro de uma tolerância, sugere fechar a
+peça naquela medida.
 
-Pra validar isso com números de verdade, e não só com a promessa de que
-"deveria funcionar", o projeto inclui um domínio completo construído do
-zero: nesting de corte de peças retangulares num rolo de matéria-prima
-(motivado pelo corte de TNT que acompanho na Descartee). Esse domínio tem
-seu próprio problema difícil, o *cutting stock problem*, NP-difícil, e a
-seção de heurísticas abaixo mede isso separadamente. Mas ele é um caso de
-uso do autocomplete, não a definição do projeto: o mesmo `src/ia/` serve
-pra qualquer peça 2D que precise ser fechada a partir de traço parcial,
-não só corte de tecido.
+Pra saber se isso funciona de verdade e não só "parece bom no README",
+precisava de um problema real pra testar. Usei o nesting de corte: pegar
+peça retangular e encaixar no rolo de tecido gastando o mínimo possível.
+É o *cutting stock problem*, NP-difícil, tem literatura e dá pra medir
+aproveitamento e comparar heurística. Motivo de eu ter escolhido esse
+domínio: acompanho corte de TNT na Descartee, então sei como é o problema
+na prática. Mas o autocomplete em si (`src/ia/`) não sabe nem precisa
+saber que a peça é de tecido, só lida com retângulo e medida.
 
 ---
 
@@ -218,31 +217,28 @@ python scripts/comparar_heuristicas.py
 └── docs/
 ```
 
-### Autocomplete de desenho assistido por IA
+### O autocomplete em si
 
-O pedido original era "integração de IA com o CAD, com auxílio de desenho,
-aprendendo com o usuário". `src/ia/sugestor.py` é a primeira versão disso,
-a mais honesta que dá para validar sem dataset de desenho real: em vez de
-só reconhecer produto de catálogo, ele tenta prever o resto de uma peça
-**antes dela estar pronta**.
+`src/ia/sugestor.py` tem duas funções, pros dois momentos em que dá pra
+sugerir algo:
 
-- `sugerir_por_uma_aresta()` é o autocomplete de verdade: o usuário desenhou
-  só um lado, a peça ainda não existe, e a função devolve uma lista
-  ranqueada de como ela provavelmente termina.
-- `sugerir_fechamento()` cobre o caso em que as duas dimensões já foram
-  desenhadas (ou extraídas de um rascunho/foto via `src/visao/extrator.py`)
-  e a medida bruta precisa virar uma medida exata.
+- `sugerir_por_uma_aresta()`: só um lado foi desenhado, a peça ainda nem
+  existe. Devolve uma lista ranqueada de como ela provavelmente vai
+  terminar. É esse aqui que é o autocomplete de verdade, sugerindo antes
+  do desenho estar pronto.
+- `sugerir_fechamento()`: as duas dimensões já foram desenhadas (ou vieram
+  de um rascunho/foto via `src/visao/extrator.py`), e a função só ajusta a
+  medida bruta pra medida exata mais próxima que já se conhece.
 
-O que faz isso aprender com o usuário, e não só reconhecer produto fixo, é
-`src/ia/historico.py`: toda peça desenhada e confirmada é registrada num
-histórico persistido em disco, que entra nas duas buscas acima **antes**
-do catálogo da fábrica (`src/modelo/catalogo.py`) e vence em caso de
-empate. Uma medida que o usuário usa toda semana mas que não é produto de
-catálogo passa a ser reconhecida da segunda vez em diante.
+`src/ia/historico.py` guarda toda peça que o usuário desenha e confirma.
+Esse histórico entra nas duas buscas acima antes do catálogo fixo
+(`src/modelo/catalogo.py`), então se der empate ele vence. É o que faz uma
+medida que você desenha toda semana, mesmo sem ser produto de catálogo,
+passar a ser reconhecida a partir da segunda vez.
 
-Em ambos os casos, respeita `pode_girar`: quando o domínio tem uma
-restrição de orientação (no exemplo de corte de tecido, o sentido de
-fabricação), a peça não é sugerida girada mesmo que a medida bata assim.
+As duas respeitam `pode_girar`: se o domínio tiver alguma restrição de
+orientação (no exemplo de tecido, o sentido de fabricação), a peça não é
+sugerida girada mesmo que a medida batesse desse jeito.
 
 ```bash
 python scripts/sugerir_rascunho.py rascunho.png --escala 0.12
@@ -254,12 +250,10 @@ python scripts/sugerir_rascunho.py rascunho.png --escala 0.12
 
 **Curso:** Engenharia de Sistemas Ciber-Físicos, PUC-SP
 
-Motivação vem de experiência profissional: 6 meses na Systra fazendo
-desenho técnico em AutoCAD, onde a ideia do autocomplete nasceu. O domínio
-de validação (nesting de corte de rolo) usa como referência o trabalho com
-TNT na Descartee, indústria de descartáveis hospitalares, mas a ferramenta
-em si não é específica de tecido nem de nenhuma indústria.
+A ideia veio de 6 meses desenhando em AutoCAD na Systra. O domínio usado
+pra testar (nesting de corte de rolo) é baseado no que vejo de corte de
+TNT na Descartee, mas isso é só o cenário de teste, a ferramenta não sabe
+nem precisa saber que existe tecido.
 
-As medidas de peça no catálogo de exemplo são de ordem de grandeza
-plausível para o setor, não dados de produto específico de nenhuma
-empresa.
+As medidas do catálogo de exemplo são só ordem de grandeza plausível pro
+setor, não dado de produto de nenhuma empresa específica.
