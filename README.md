@@ -47,24 +47,24 @@ saber que a peça é de tecido, só lida com retângulo e medida.
 
 ## O problema, formulado
 
-> Entrada: um pedido de produção (lista de peças retangulares, cada uma
-> com medida e se pode ou não ser girada) e a largura do rolo de
-> matéria-prima. Saída: a posição de cada peça no rolo, minimizando o
-> comprimento de rolo consumido.
+> Entrada: um traço parcial de um desenho técnico (uma medida conhecida,
+> ou um retângulo já fechado extraído de rascunho/foto) e o que já se
+> conhece sobre o domínio (histórico de peças desenhadas, catálogo de
+> referência). Saída: a medida completa mais provável da peça, ranqueada
+> por confiança, respeitando as restrições geométricas daquele domínio.
 
-Corte a partir de rolo aparece em vários materiais: tecido, papel, vinil,
-chapa metálica fina, couro sintético. O rolo tem **largura fixa** e
-comprimento contínuo, o que muda o objetivo em relação ao bin packing
-clássico: não se trata de usar menos chapas, e sim de **desenrolar menos
-metro linear**. A faixa vazia que sobra na lateral foi paga junto com o
-resto.
+Desenho técnico não tem dataset público anotado do jeito que dígito
+manuscrito ou imagem de objeto têm, então treinar rede neural nisso do
+zero não é opção realista pra um projeto de curso. O problema formulado
+acima é resolvível sem isso: é busca por proximidade num espaço pequeno
+(histórico + catálogo), não classificação. `src/ia/sugerir_por_uma_aresta()`
+e `sugerir_fechamento()` implementam exatamente essa busca.
 
-Uma restrição comum nesse tipo de material, não do algoritmo em si:
-**muito material de rolo tem sentido de fabricação** (fibra do tecido,
-veio da chapa, grão do couro). Girar uma peça 90 graus muda como ela
-estica ou resiste, então nem toda peça pode ser rotacionada livremente.
-Isso está em `Peca.pode_girar` e o validador reprova layout que gire o
-que não podia.
+A restrição geométrica citada acima (`Peca.pode_girar`) existe porque
+peça de desenho técnico nem sempre pode ser rotacionada livremente: no
+domínio usado pra testar (corte de rolo), o material tem sentido de
+fabricação, e girar 90 graus muda como a peça estica ou resiste. Cada
+domínio novo que usar `src/ia/` define suas próprias restrições assim.
 
 ---
 
@@ -84,6 +84,14 @@ quente, onde a correção importa mais que o tempo.
 ---
 
 ## As heurísticas
+
+Domínio usado pra testar, formulado à parte porque é um problema clássico
+com nome próprio, o *cutting stock problem*: dado um pedido de peças
+retangulares (medida e se pode girar) e a largura de um rolo de
+matéria-prima, decidir a posição de cada peça minimizando o comprimento
+de rolo consumido. Largura fixa e comprimento contínuo mudam o objetivo
+em relação a bin packing clássico: não é usar menos chapas, é
+**desenrolar menos metro linear**.
 
 **Faixa (shelf).** Empilha as peças em prateleiras horizontais. Cada faixa
 tem a altura da peça mais alta que entrou nela, e peças novas vão sendo

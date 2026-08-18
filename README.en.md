@@ -48,24 +48,26 @@ fabric, it just deals with rectangles and measurements.
 
 ## The problem, formulated
 
-> Input: a production order (list of rectangular pieces, each with a size
-> and whether it can be rotated) and the width of the raw material roll.
-> Output: the position of each piece on the roll, minimizing the roll
-> length consumed.
+> Input: a partial technical drawing (a known measurement, or a closed
+> rectangle already extracted from a sketch/photo) and what's already
+> known about the domain (history of drawn pieces, reference catalog).
+> Output: the piece's most likely full measurement, ranked by confidence,
+> respecting that domain's geometric constraints.
 
-Cutting from a roll shows up across materials: fabric, paper, vinyl, thin
-sheet metal, synthetic leather. The roll has a **fixed width** and
-continuous length, which changes the objective compared to classic bin
-packing: it's not about using fewer sheets, it's about **unrolling less
-linear length**. The empty strip left on the side was already paid for
-along with the rest.
+Technical drawing doesn't have a public annotated dataset the way
+handwritten digits or object images do, so training a neural network on
+it from scratch isn't realistic for a course project. The problem
+formulated above doesn't need that: it's nearest-match search over a
+small space (history + catalog), not classification.
+`src/ia/sugerir_por_uma_aresta()` and `sugerir_fechamento()` implement
+exactly that search.
 
-A constraint common to this kind of material, not the algorithm itself:
-**a lot of roll material has a manufacturing direction** (fabric grain,
-sheet metal grain, leather grain). Rotating a piece 90 degrees changes how
-it stretches or resists, so not every piece can be freely rotated. This
-lives in `Peca.pode_girar`, and the validator rejects any layout that
-rotates what shouldn't be rotated.
+The geometric constraint mentioned above (`Peca.pode_girar`) exists
+because a technical-drawing piece can't always rotate freely: in the
+domain used to test this (roll cutting), the material has a manufacturing
+direction, and rotating 90 degrees changes how the piece stretches or
+resists. Each new domain that uses `src/ia/` defines its own constraints
+this way.
 
 ---
 
@@ -85,6 +87,14 @@ outside the hot path, where correctness matters more than speed.
 ---
 
 ## The heuristics
+
+Domain used to test this, formulated separately because it's a classic
+problem with its own name, the cutting stock problem: given an order of
+rectangular pieces (size and whether they can rotate) and the width of a
+raw material roll, decide each piece's position minimizing the roll
+length consumed. Fixed width and continuous length change the objective
+compared to classic bin packing: it's not about using fewer sheets, it's
+about **unrolling less linear length**.
 
 **Shelf.** Stacks pieces into horizontal shelves. Each shelf takes the
 height of the tallest piece placed in it, and new pieces get pushed to the
