@@ -17,6 +17,44 @@ you can open the result in any CAD software.
 
 ---
 
+## How it works
+
+You draw (or already have) an incomplete rectangular piece, and the
+system suggests how it finishes. Two situations:
+
+- **Only one side is drawn** (the piece doesn't exist yet): you give it
+  that length, the system returns a ranked list of suggestions for how
+  the piece is likely to finish. This is the real autocomplete, before
+  the drawing is done.
+- **Both dimensions already exist** (drawn, or extracted from a sketch
+  photo): the system snaps the raw measurement to the closest one it
+  already knows.
+
+The suggestion comes from two sources, in this order: your own
+**history** of what you've drawn (grows on its own, every confirmed
+piece becomes a future example), and a reference **catalog** that serves
+as a base before the history has anything in it. None of this is a
+neural network: it's nearest-match search, so it works without a
+training dataset and without a GPU.
+
+## How to install
+
+```bash
+git clone https://github.com/caiogadotti/autocomplete-desenho-cad
+cd autocomplete-desenho-cad
+pip install -r requirements.txt
+```
+
+That's enough to use it from the command line (sketch/photo → the
+`sugerir_rascunho.py` CLI, see "How the autocomplete works" below).
+
+**To use it inside FreeCAD** (a new tab with a button, suggestions right
+on screen): full step-by-step, with exact paths per operating system, in
+[`INSTALL_FREECAD.md`](INSTALL_FREECAD.md). Short version: copy or link
+the cloned folder into FreeCAD's `Mod/` folder and restart.
+
+---
+
 ## Why this project
 
 At Systra I spent 6 months drawing in AutoCAD. A lot of that time wasn't

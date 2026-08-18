@@ -17,6 +17,43 @@ verdade, então dá pra abrir o resultado em qualquer CAD.
 
 ---
 
+## Como funciona
+
+Você desenha (ou já tem desenhado) uma peça retangular incompleta, e o
+sistema sugere como ela termina. Duas situações:
+
+- **Só um lado está desenhado** (a peça nem existe ainda): você informa
+  esse comprimento, o sistema devolve uma lista de sugestões ranqueadas
+  de como a peça provavelmente termina. Esse é o autocomplete de verdade,
+  antes do desenho estar pronto.
+- **As duas dimensões já existem** (desenhadas, ou extraídas de uma foto
+  do rascunho): o sistema ajusta a medida bruta pra medida exata mais
+  próxima que já conhece.
+
+A sugestão vem de duas fontes, nessa ordem: o **histórico** do que você
+mesmo já desenhou (cresce sozinho, cada peça confirmada vira exemplo
+futuro), e um **catálogo** de referência que serve de base antes do
+histórico ter alguma coisa. Nada disso é rede neural: é busca por
+proximidade, então funciona sem dataset de treino e sem GPU.
+
+## Como instalar
+
+```bash
+git clone https://github.com/caiogadotti/autocomplete-desenho-cad
+cd autocomplete-desenho-cad
+pip install -r requirements.txt
+```
+
+Isso já é suficiente pra usar por linha de comando (rascunho/foto → CLI
+`sugerir_rascunho.py`, ver seção "Como funciona o autocomplete" abaixo).
+
+**Pra usar dentro do FreeCAD** (aba nova com botão, sugestão direto na
+tela): passo a passo completo, com os caminhos exatos por sistema
+operacional, em [`INSTALL_FREECAD.md`](INSTALL_FREECAD.md). Resumo: copia
+ou linka a pasta clonada pra dentro do `Mod/` do FreeCAD e reinicia.
+
+---
+
 ## Por que esse projeto
 
 Na Systra passei 6 meses desenhando em AutoCAD. Boa parte do tempo não era
