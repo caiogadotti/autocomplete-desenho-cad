@@ -21,6 +21,14 @@ class AutocompleteCADWorkbench(Gui.Workbench):
     Icon = ""
 
     def Initialize(self):
+        # `InitGui.py` não roda como import normal (o FreeCAD executa o
+        # conteúdo do arquivo sem definir `__file__` nesse namespace, então
+        # o truque comum de achar a própria pasta via `__file__` quebra com
+        # "name '__file__' is not defined" (erro real, visto testando
+        # dentro do FreeCAD de verdade). Não precisa desse truque de
+        # qualquer forma: o FreeCAD já adiciona a pasta de cada addon em
+        # `Mod/` ao `sys.path` sozinho, então `import comandos` funciona
+        # direto, contanto que `comandos.py` esteja ao lado deste arquivo.
         import comandos
 
         Gui.addCommand("Autocomplete_SugerirAresta", comandos.ComandoSugerirAresta())

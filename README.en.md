@@ -75,10 +75,11 @@ Four ways to feed the autocomplete:
 
 - **Partial stroke**: pass the drawn edge's measurement straight into
   `sugerir_por_uma_aresta()`.
-- **Inside the CAD tool**: `freecad_addon/` is a real FreeCAD workbench, a
-  new tab with a toolbar button. Select the edge on screen, click, pick a
-  suggestion, the rectangle gets drawn. Install steps and v1 limitations
-  in [`freecad_addon/README.md`](freecad_addon/README.md).
+- **Inside the CAD tool**: `InitGui.py`/`comandos.py` (repo root) are a
+  real FreeCAD workbench, tested inside FreeCAD 1.1.3: a new tab with a
+  toolbar button. Select the edge on screen, click, pick a suggestion,
+  the rectangle gets drawn. Install steps and v1 limitations in
+  [`INSTALL_FREECAD.md`](INSTALL_FREECAD.md).
 - **Real DXF**: `src/cad/dxf.py` reads/writes DXF via `ezdxf`, tested
   round-tripping through FreeCAD.
 - **Sketch or photo**: `src/visao/extrator.py` finds rectangles in a
@@ -140,6 +141,9 @@ python scripts/comparar_heuristicas.py
 ## Project structure
 
 ```
+├── InitGui.py                     registers the workbench with FreeCAD (must be at root)
+├── comandos.py                    "suggest piece from selected edge" command
+├── INSTALL_FREECAD.md             install and usage steps inside FreeCAD
 ├── src/
 │   ├── ia/
 │   │   ├── sugestor.py       piece autocomplete, from one edge or from a full closing
@@ -162,10 +166,6 @@ python scripts/comparar_heuristicas.py
 │   ├── ver_plano.py              renders a plan DXF as PNG
 │   ├── comparar_heuristicas.py   measured benchmark, with validation
 │   └── avaliar_extrator.py       recall/precision/error of the vision extractor
-├── freecad_addon/                 FreeCAD workbench: new tab, toolbar button
-│   ├── InitGui.py                registers the workbench with FreeCAD
-│   ├── comandos.py               "suggest piece from selected edge" command
-│   └── README.md                 install and usage steps inside FreeCAD
 └── docs/
 ```
 

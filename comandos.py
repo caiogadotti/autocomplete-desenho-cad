@@ -4,10 +4,10 @@ Reusa `src/ia/sugestor.py` direto, sem duplicar a lógica de busca: o addon
 é só a cola entre "usuário selecionou uma aresta no FreeCAD" e "chamar
 `sugerir_por_uma_aresta` com o comprimento dela".
 
-Esse arquivo assume que `freecad_addon/` está dentro do clone do projeto
-(não copiado sozinho pra outro lugar), porque sobe um nível a partir da
-própria localização pra achar `src/`. Ver `freecad_addon/README.md` pra
-instalação.
+Este arquivo fica na raiz do repositório, não numa subpasta, porque é
+assim que o FreeCAD encontra addon dentro de `Mod/`: ele só olha o
+`InitGui.py` que está direto na raiz de cada pasta ali dentro, não
+procura em subpastas. Ver `INSTALL_FREECAD.md` pra instalação.
 """
 
 import os
@@ -17,8 +17,7 @@ import FreeCAD as App
 import FreeCADGui as Gui
 from PySide import QtGui
 
-_AQUI = os.path.dirname(os.path.abspath(__file__))
-_RAIZ_PROJETO = os.path.dirname(_AQUI)
+_RAIZ_PROJETO = os.path.dirname(os.path.abspath(__file__))
 if _RAIZ_PROJETO not in sys.path:
     sys.path.insert(0, _RAIZ_PROJETO)
 
@@ -48,11 +47,28 @@ class ComandoSugerirAresta:
 
     def Activated(self):
         selecao = Gui.Selection.getSelectionEx()
-        if not selecao or not selecao[0].SubObjects:
+        if not selecao:
             QtGui.QMessageBox.warning(None, "Autocomplete CAD", "Selecione uma aresta antes de rodar o comando.")
             return
 
-        aresta = selecao[0].SubObjects[0]
+        # Clicar na aresta na tela 3D preenche `SubObjects` com o Edge
+        # exato. Selecionar o objeto inteiro pela árvore não preenche
+        # `SubObjects` (é assim que o FreeCAD trata seleção sem
+        # sub-elemento), então cai aqui: se o objeto só tem uma aresta,
+        # usa ela, sem forçar o usuário a saber dessa diferença.
+        if selecao[0].SubObjects:
+            aresta = selecao[0].SubObjects[0]
+        else:
+            forma = getattr(selecao[0].Object, "Shape", None)
+            if forma is None or len(forma.Edges) != 1:
+                QtGui.QMessageBox.warning(
+                    None, "Autocomplete CAD",
+                    "Selecione uma aresta específica (clique nela na tela 3D), "
+                    "não o objeto inteiro, já que ele tem mais de uma aresta.",
+                )
+                return
+            aresta = forma.Edges[0]
+
         if not hasattr(aresta, "Length"):
             QtGui.QMessageBox.warning(None, "Autocomplete CAD", "O objeto selecionado não é uma aresta.")
             return
