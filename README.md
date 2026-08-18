@@ -126,10 +126,7 @@ python scripts/comparar_heuristicas.py
 | Histórico de peças desenhadas | **Pronto** |
 | Leitura/escrita de DXF (CAD) | **Pronto** |
 | Extração de peças por visão computacional | **Pronto** |
-| Modelo de peça, rolo e layout (domínio de teste) | **Pronto** |
-| Validador de layout | **Pronto** |
-| Heurísticas de nesting (faixa x2, skyline) | **Pronto** |
-| Benchmark comparativo | **Pronto** |
+| Domínio de teste (nesting de corte), pra validar com número real | **Pronto** |
 | Interface de desenho em tempo real (dentro de um CAD) | Planejado |
 | Generalizar o autocomplete além de busca exata por distância | Planejado |
 

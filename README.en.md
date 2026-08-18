@@ -126,10 +126,7 @@ python scripts/comparar_heuristicas.py
 | History of drawn pieces | **Done** |
 | DXF read/write (CAD) | **Done** |
 | Piece extraction via computer vision | **Done** |
-| Piece, roll and layout model (test domain) | **Done** |
-| Layout validator | **Done** |
-| Nesting heuristics (2 shelf variants, skyline) | **Done** |
-| Comparative benchmark | **Done** |
+| Test domain (cutting nesting), to validate with real numbers | **Done** |
 | Real-time drawing interface (inside a CAD tool) | Planned |
 | Generalize the autocomplete beyond exact nearest-match search | Planned |
 
