@@ -71,10 +71,14 @@ Both respect `pode_girar`: if the domain has an orientation constraint (in
 the example below, the material's manufacturing direction), the piece
 never gets suggested rotated even if the measurement would match that way.
 
-Three ways to feed the autocomplete:
+Four ways to feed the autocomplete:
 
 - **Partial stroke**: pass the drawn edge's measurement straight into
   `sugerir_por_uma_aresta()`.
+- **Inside the CAD tool**: `freecad_addon/` is a real FreeCAD workbench, a
+  new tab with a toolbar button. Select the edge on screen, click, pick a
+  suggestion, the rectangle gets drawn. Install steps and v1 limitations
+  in [`freecad_addon/README.md`](freecad_addon/README.md).
 - **Real DXF**: `src/cad/dxf.py` reads/writes DXF via `ezdxf`, tested
   round-tripping through FreeCAD.
 - **Sketch or photo**: `src/visao/extrator.py` finds rectangles in a
@@ -127,7 +131,8 @@ python scripts/comparar_heuristicas.py
 | DXF read/write (CAD) | **Done** |
 | Piece extraction via computer vision | **Done** |
 | Test domain (cutting nesting), to validate with real numbers | **Done** |
-| Real-time drawing interface (inside a CAD tool) | Planned |
+| Workbench inside FreeCAD (tab + toolbar button) | **Done** (v1) |
+| Align suggestion with original edge's position/rotation | Planned |
 | Generalize the autocomplete beyond exact nearest-match search | Planned |
 
 ---
@@ -157,6 +162,10 @@ python scripts/comparar_heuristicas.py
 │   ├── ver_plano.py              renders a plan DXF as PNG
 │   ├── comparar_heuristicas.py   measured benchmark, with validation
 │   └── avaliar_extrator.py       recall/precision/error of the vision extractor
+├── freecad_addon/                 FreeCAD workbench: new tab, toolbar button
+│   ├── InitGui.py                registers the workbench with FreeCAD
+│   ├── comandos.py               "suggest piece from selected edge" command
+│   └── README.md                 install and usage steps inside FreeCAD
 └── docs/
 ```
 

@@ -32,7 +32,6 @@ from dataclasses import dataclass
 
 from src.ia.historico import PecaHistorico, carregar_historico
 from src.modelo.catalogo import CATALOGO
-from src.visao.extrator import PecaExtraida, extrair_pecas
 
 TOLERANCIA_PADRAO_MM = 15.0
 
@@ -192,7 +191,15 @@ def sugerir_pecas_de_rascunho(
     desenho parcial, o extrator (já validado com 100% de recall/precisão
     sintética) acha os retângulos, e cada um passa por `sugerir_fechamento`.
     Se `historico=None`, carrega o histórico persistido em disco.
+
+    Import de `src.visao.extrator` fica aqui dentro, não no topo do módulo,
+    porque esse é o único caminho do autocomplete que depende de OpenCV. O
+    addon de FreeCAD usa `sugerir_por_uma_aresta`/`sugerir_fechamento`
+    direto, sem imagem, e o Python embutido do FreeCAD não tem `cv2`
+    instalado por padrão.
     """
+    from src.visao.extrator import PecaExtraida, extrair_pecas
+
     if historico is None:
         historico = carregar_historico()
 

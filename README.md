@@ -71,10 +71,14 @@ As duas respeitam `pode_girar`: se o domínio tiver alguma restrição de
 orientação (no exemplo abaixo, o sentido de fabricação do material), a
 peça não é sugerida girada mesmo que a medida batesse desse jeito.
 
-Três formas de entrada pro autocomplete:
+Quatro formas de entrada pro autocomplete:
 
 - **Traço parcial**: passa a medida do lado já desenhado direto pra
   `sugerir_por_uma_aresta()`.
+- **Dentro do CAD**: `freecad_addon/` é um workbench de verdade do
+  FreeCAD, aba nova com botão de toolbar. Seleciona a aresta na tela,
+  clica, escolhe a sugestão, o retângulo é desenhado. Instalação e
+  limitações da v1 em [`freecad_addon/README.md`](freecad_addon/README.md).
 - **DXF real**: `src/cad/dxf.py` lê/escreve DXF via `ezdxf`, testado indo
   e voltando pelo FreeCAD.
 - **Rascunho ou foto**: `src/visao/extrator.py` acha os retângulos num
@@ -127,7 +131,8 @@ python scripts/comparar_heuristicas.py
 | Leitura/escrita de DXF (CAD) | **Pronto** |
 | Extração de peças por visão computacional | **Pronto** |
 | Domínio de teste (nesting de corte), pra validar com número real | **Pronto** |
-| Interface de desenho em tempo real (dentro de um CAD) | Planejado |
+| Workbench dentro do FreeCAD (aba + botão de toolbar) | **Pronto** (v1) |
+| Alinhar sugestão com posição/rotação da aresta original | Planejado |
 | Generalizar o autocomplete além de busca exata por distância | Planejado |
 
 ---
@@ -157,6 +162,10 @@ python scripts/comparar_heuristicas.py
 │   ├── ver_plano.py              renderiza um plano DXF em PNG
 │   ├── comparar_heuristicas.py   benchmark medido, com validação
 │   └── avaliar_extrator.py       recall/precisão/erro do extrator de visão
+├── freecad_addon/                 workbench do FreeCAD: aba nova, botão de toolbar
+│   ├── InitGui.py                registra o workbench no FreeCAD
+│   ├── comandos.py               comando "sugerir peça pela aresta selecionada"
+│   └── README.md                 como instalar e usar dentro do FreeCAD
 └── docs/
 ```
 
