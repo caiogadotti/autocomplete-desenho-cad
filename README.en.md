@@ -92,101 +92,24 @@ python scripts/sugerir_rascunho.py rascunho.png --escala 0.12
 ## Domain used to validate it: cutting nesting
 
 Drawing autocomplete is easy to make "look like it works" and hard to
-measure. To get real numbers instead of just the promise that it should
-work, I needed a real problem with a clear metric. I used cutting nesting:
-fit rectangular pieces onto a roll of raw material while wasting as little
-as possible. That's the cutting stock problem, NP-hard, it has literature
-behind it, and yield/heuristics are measurable. I chose this domain
-because I see TNT fabric cutting at Descartee and know the problem
-firsthand, but the autocomplete itself (`src/ia/`) doesn't know or need to
-know the piece is fabric, it just deals with rectangles and measurements.
+measure. To get real numbers, I used a real problem with a clear metric:
+fitting rectangular pieces onto a roll while wasting as little material as
+possible, the cutting stock problem, NP-hard. I chose this domain because
+I see TNT fabric cutting at Descartee, but the autocomplete (`src/ia/`)
+doesn't know or need to know the piece is fabric, it just deals with
+rectangles and measurements.
 
-> Input: a production order (list of rectangular pieces, each with a size
-> and whether it can be rotated) and the width of the raw material roll.
-> Output: the position of each piece on the roll, minimizing the roll
-> length consumed.
-
-The roll has a fixed width and continuous length, which changes the
-objective compared to classic bin packing: it's not about using fewer
-sheets, it's about **unrolling less linear length**. `Peca.pode_girar`
-models the orientation constraint that motivated that field in the
-autocomplete: roll material often has a manufacturing direction (fabric
-grain, sheet metal grain, leather grain), and rotating 90 degrees changes
-how the piece stretches or resists.
-
-### The validator comes before the heuristics
-
-In nesting, an overlap bug **improves** the metric. If two pieces occupy
-the same area of the roll, the computed yield goes up, because the same
-surface now counts as two pieces. The number looks good precisely because
-it's wrong.
-
-That's why `Layout.validar()` exists before any heuristic, and no result
-below was reported without passing through it. It checks pairwise overlap,
-pieces outside the roll width, negative position, and forbidden rotation.
-It's O(n²) and makes no attempt to be fast: it runs outside the hot path,
-where correctness matters more than speed.
-
-### The heuristics
-
-**Shelf.** Stacks pieces into horizontal shelves. Each shelf takes the
-height of the tallest piece placed in it, and new pieces get pushed to the
-right until nothing else fits. Simple, and it wastes vertical space: a
-shelf opened by a 1200mm piece stays 1200mm tall even if every other piece
-in it is 300mm. Two variants: first-fit and best-fit.
-
-**Skyline.** Keeps the real upper contour of what's already been cut,
-segment by segment, like a city skyline. A piece can rest on top of two
-neighboring low pieces, something shelf packing never sees. Costs more to
-maintain and update that profile on every insertion.
-
-### Measured results
-
-5 orders per size, generated with a realistic mix of catalog pieces
-(small pieces appear far more often than large ones, like a real surgical
-kit). 1600mm roll. All layouts validated.
-
-| heuristic | 50 pieces | 200 pieces | 500 pieces | time (500) |
-|---|---:|---:|---:|---:|
-| Shelf, first-fit | **88.3%** | **90.1%** | **90.3%** | 13.7ms |
-| Shelf, best-fit | **88.3%** | **90.1%** | **90.3%** | 13.6ms |
-| Skyline | 88.0% | 89.8% | 90.1% | **2.8ms** |
-| Skyline, penalize buried | 87.7% | 87.6% | 87.7% | 5.0ms |
-
-**Finding 1: the smarter heuristic doesn't cost more, it's cheaper.**
-Skyline runs 5x faster than shelf on the 500-piece order (2.8ms vs
-13.7ms), despite keeping a more complex data structure. Shelf scans the
-list of open shelves for every piece, and that list keeps growing (66
-shelves in a 200-piece order), while the skyline profile stays short
-because neighboring segments at the same height get fused: 3.9 segments
-on average, against 66 shelves.
-
-**Finding 2: "best-fit" costs time and delivers nothing.** Both shelf
-variants give identical yield across all three sizes. That looked like a
-bug; the investigation showed it isn't. They genuinely diverge (17 out of
-200 pieces land in a different position), but the final length matches
-exactly, because length equals the sum of shelf heights, and the decision
-to open a new shelf is identical between both variants. Best-fit only
-changes where a piece goes within already-open shelves, never how many
-shelves exist. It optimizes something that isn't the bottleneck.
-
-**Finding 3: the "textbook improvement" to skyline made it worse.**
-Bin-packing literature usually breaks ties by minimizing the buried area
-(the gap that gets sealed under a piece when it lands on the tallest point
-of a stretch). I implemented it, measured it across 20 orders, and it got
-worse:
-
-| tie-break criterion | yield |
-|---|---:|
-| lowest top, then leftmost | **89.58%** |
-| lowest top, then least buried area | 86.67% |
-| buried area above everything | 68.28% |
-
-Packing left keeps the skyline as a few wide walls (3.9 segments on
-average); chasing the least buried area spreads pieces across the roll and
-fragments the profile (5.6 segments). A fragmented profile has more narrow
-steps where nothing else fits. The default in the code is the criterion
-that measured better; the other stays available as a parameter.
+`Layout.validar()` runs before any heuristic and rejects overlap, pieces
+outside the roll width, and forbidden rotation, because an overlap bug
+improves the yield metric instead of worsening it, which would let a bug
+pass as a good result. Two heuristic families compared: shelf (stacks
+into horizontal rows) and skyline (keeps the real contour of what's been
+cut). The strongest finding: minimizing the buried area under each piece,
+the standard bin-packing tie-break, measured **worse** (89.6% → as low as
+68.3% depending on how aggressively applied), because it fragments the
+profile instead of keeping a few wide segments. Details and the other
+comparisons are in the comments of `src/heuristicas/skyline.py` and in
+the benchmark.
 
 ```bash
 pip install -r requirements.txt
