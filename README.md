@@ -131,7 +131,7 @@ python scripts/comparar_heuristicas.py
 | Heurísticas de nesting (faixa x2, skyline) | **Pronto** |
 | Benchmark comparativo | **Pronto** |
 | Interface de desenho em tempo real (dentro de um CAD) | Planejado |
-| Exportação de etiqueta ZPL | Planejado |
+| Generalizar o autocomplete além de busca exata por distância | Planejado |
 
 ---
 

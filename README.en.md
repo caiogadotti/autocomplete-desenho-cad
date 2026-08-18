@@ -131,7 +131,7 @@ python scripts/comparar_heuristicas.py
 | Nesting heuristics (2 shelf variants, skyline) | **Done** |
 | Comparative benchmark | **Done** |
 | Real-time drawing interface (inside a CAD tool) | Planned |
-| ZPL label export | Planned |
+| Generalize the autocomplete beyond exact nearest-match search | Planned |
 
 ---
 
