@@ -99,24 +99,35 @@ something to suggest:
   a sketch/photo via `src/visao/extrator.py`), and the function just
   snaps the raw measurement to the closest known one.
 
-`src/ia/historico.py` keeps every piece the user draws and confirms. That
-history gets checked before the fixed catalog (`src/modelo/catalogo.py`)
-in both functions above, so it wins on a tie. That's what makes a
-measurement you draw every week, even one that isn't a catalog product,
-get recognized starting the second time.
+`src/ia/historico.py` keeps every piece the user draws, generates, or
+confirms, in a SQLite database (`dados/historico_pecas.db`, created on
+first use). That history gets checked before the fixed catalog
+(`src/modelo/catalogo.py`) in both functions above, so it wins on a tie.
+That's what makes a measurement you draw every week, even one that isn't
+a catalog product, get recognized starting the second time.
 
 Both respect `pode_girar`: if the domain has an orientation constraint (in
 the example below, the material's manufacturing direction), the piece
 never gets suggested rotated even if the measurement would match that way.
 
-Four ways to feed the autocomplete:
+Five ways to feed the autocomplete:
 
 - **Partial stroke**: pass the drawn edge's measurement straight into
   `sugerir_por_uma_aresta()`.
+- **Typed measurement, generates the drawing**: the reverse of the
+  autocomplete. Instead of the system inferring the measurement, you
+  already know what you want and type it in; the system draws it and
+  saves it to the history. `src/cad/dxf.py:escrever_peca_avulsa()`
+  generates the DXF, `scripts/gerar_peca.py` is the CLI:
+  ```bash
+  python scripts/gerar_peca.py 480 480 --nome touca --saida touca.dxf
+  ```
+  Inside FreeCAD it's the "Gerar peça (medida digitada)" command: asks
+  for width, height and name, draws it, and registers it in the database.
 - **Inside the CAD tool**: `InitGui.py`/`comandos.py` (repo root) are a
-  real FreeCAD workbench, tested inside FreeCAD 1.1.3: a new tab with a
-  toolbar button. Select the edge on screen, click, pick a suggestion,
-  the rectangle gets drawn. Install steps and v1 limitations in
+  real FreeCAD workbench, tested inside FreeCAD 1.1.3: a new tab with two
+  toolbar buttons, one for each mode above (suggest from an edge, generate
+  from a typed measurement). Install steps and v1 limitations in
   [`INSTALL_FREECAD.md`](INSTALL_FREECAD.md).
 - **Real DXF**: `src/cad/dxf.py` reads/writes DXF via `ezdxf`, tested
   round-tripping through FreeCAD.
@@ -166,11 +177,12 @@ python scripts/comparar_heuristicas.py
 | Component | Status |
 |---|---|
 | Autocomplete by one edge and by closing | **Done** |
-| History of drawn pieces | **Done** |
+| Generate a piece from a typed measurement | **Done** |
+| History of drawn pieces (SQLite) | **Done** |
 | DXF read/write (CAD) | **Done** |
 | Piece extraction via computer vision | **Done** |
 | Test domain (cutting nesting), to validate with real numbers | **Done** |
-| Workbench inside FreeCAD (tab + toolbar button) | **Done** (v1) |
+| Workbench inside FreeCAD (tab + 2 toolbar buttons) | **Done** (v1) |
 | Align suggestion with original edge's position/rotation | Planned |
 | Generalize the autocomplete beyond exact nearest-match search | Planned |
 
@@ -180,14 +192,14 @@ python scripts/comparar_heuristicas.py
 
 ```
 ├── InitGui.py                     registers the workbench with FreeCAD (must be at root)
-├── comandos.py                    "suggest piece from selected edge" command
+├── comandos.py                    "suggest by edge" and "generate by typed measurement" commands
 ├── INSTALL_FREECAD.md             install and usage steps inside FreeCAD
 ├── src/
 │   ├── ia/
 │   │   ├── sugestor.py       piece autocomplete, from one edge or from a full closing
-│   │   └── historico.py      history of drawn pieces, persisted to disk
+│   │   └── historico.py      history of drawn pieces, in SQLite
 │   ├── cad/
-│   │   └── dxf.py            reads/writes DXF (real CAD format, via ezdxf)
+│   │   └── dxf.py            reads/writes DXF (real CAD format, via ezdxf); generates a standalone piece from a typed measurement
 │   ├── visao/
 │   │   ├── prancha.py        generates a synthetic technical drawing with known ground truth
 │   │   └── extrator.py       finds pieces in a drawing via classic OpenCV
@@ -200,6 +212,7 @@ python scripts/comparar_heuristicas.py
 │       └── skyline.py        skyline profile, with both tie-break criteria
 ├── scripts/
 │   ├── sugerir_rascunho.py       CLI: sketch image -> suggested pieces
+│   ├── gerar_peca.py             CLI: typed measurement -> DXF generated + saved to history
 │   ├── otimizar.py               CLI: pieces DXF -> cutting plan DXF
 │   ├── ver_plano.py              renders a plan DXF as PNG
 │   ├── comparar_heuristicas.py   measured benchmark, with validation

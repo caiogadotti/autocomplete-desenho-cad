@@ -98,25 +98,35 @@ sugerir algo:
   de um rascunho/foto via `src/visao/extrator.py`), e a função só ajusta a
   medida bruta pra medida exata mais próxima que já se conhece.
 
-`src/ia/historico.py` guarda toda peça que o usuário desenha e confirma.
-Esse histórico entra nas duas buscas acima antes do catálogo fixo
-(`src/modelo/catalogo.py`), então se der empate ele vence. É o que faz uma
-medida que você desenha toda semana, mesmo sem ser produto de catálogo,
-passar a ser reconhecida a partir da segunda vez.
+`src/ia/historico.py` guarda toda peça que o usuário desenha, gera ou
+confirma, num banco SQLite (`dados/historico_pecas.db`, criado sozinho no
+primeiro uso). Esse histórico entra nas duas buscas acima antes do
+catálogo fixo (`src/modelo/catalogo.py`), então se der empate ele vence.
+É o que faz uma medida que você desenha toda semana, mesmo sem ser
+produto de catálogo, passar a ser reconhecida a partir da segunda vez.
 
 As duas respeitam `pode_girar`: se o domínio tiver alguma restrição de
 orientação (no exemplo abaixo, o sentido de fabricação do material), a
 peça não é sugerida girada mesmo que a medida batesse desse jeito.
 
-Quatro formas de entrada pro autocomplete:
+Cinco formas de entrada pro autocomplete:
 
 - **Traço parcial**: passa a medida do lado já desenhado direto pra
   `sugerir_por_uma_aresta()`.
+- **Medida digitada, gera o desenho**: o caminho inverso do autocomplete.
+  Em vez de o sistema inferir a medida, você já sabe o que quer e digita
+  direto; o sistema desenha e salva no histórico. `src/cad/dxf.py:escrever_peca_avulsa()`
+  gera o DXF, `scripts/gerar_peca.py` é o CLI:
+  ```bash
+  python scripts/gerar_peca.py 480 480 --nome touca --saida touca.dxf
+  ```
+  Dentro do FreeCAD é o comando "Gerar peça (medida digitada)": pede
+  largura, altura e nome, desenha e já registra no banco.
 - **Dentro do CAD**: `InitGui.py`/`comandos.py` (raiz do repo) são um
   workbench de verdade do FreeCAD, testado dentro do FreeCAD 1.1.3: aba
-  nova com botão de toolbar. Seleciona a aresta na tela, clica, escolhe a
-  sugestão, o retângulo é desenhado. Instalação e limitações da v1 em
-  [`INSTALL_FREECAD.md`](INSTALL_FREECAD.md).
+  nova com dois botões de toolbar, um pra cada modo acima (sugerir a
+  partir de aresta, gerar a partir de medida digitada). Instalação e
+  limitações da v1 em [`INSTALL_FREECAD.md`](INSTALL_FREECAD.md).
 - **DXF real**: `src/cad/dxf.py` lê/escreve DXF via `ezdxf`, testado indo
   e voltando pelo FreeCAD.
 - **Rascunho ou foto**: `src/visao/extrator.py` acha os retângulos num
@@ -165,11 +175,12 @@ python scripts/comparar_heuristicas.py
 | Componente | Status |
 |---|---|
 | Autocomplete por uma aresta e por fechamento | **Pronto** |
-| Histórico de peças desenhadas | **Pronto** |
+| Geração de peça a partir de medida digitada | **Pronto** |
+| Histórico de peças desenhadas (SQLite) | **Pronto** |
 | Leitura/escrita de DXF (CAD) | **Pronto** |
 | Extração de peças por visão computacional | **Pronto** |
 | Domínio de teste (nesting de corte), pra validar com número real | **Pronto** |
-| Workbench dentro do FreeCAD (aba + botão de toolbar) | **Pronto** (v1) |
+| Workbench dentro do FreeCAD (aba + 2 botões de toolbar) | **Pronto** (v1) |
 | Alinhar sugestão com posição/rotação da aresta original | Planejado |
 | Generalizar o autocomplete além de busca exata por distância | Planejado |
 
@@ -179,14 +190,14 @@ python scripts/comparar_heuristicas.py
 
 ```
 ├── InitGui.py                     registra o workbench no FreeCAD (precisa ficar na raiz)
-├── comandos.py                    comando "sugerir peça pela aresta selecionada"
+├── comandos.py                    comandos "sugerir por aresta" e "gerar por medida digitada"
 ├── INSTALL_FREECAD.md             como instalar e usar dentro do FreeCAD
 ├── src/
 │   ├── ia/
 │   │   ├── sugestor.py       autocomplete de peça, por uma aresta ou por fechamento
-│   │   └── historico.py      histórico de peças desenhadas, persistido em disco
+│   │   └── historico.py      histórico de peças desenhadas, em SQLite
 │   ├── cad/
-│   │   └── dxf.py            lê/escreve DXF (formato real de CAD, via ezdxf)
+│   │   └── dxf.py            lê/escreve DXF (formato real de CAD, via ezdxf); gera peça avulsa de medida digitada
 │   ├── visao/
 │   │   ├── prancha.py        gera desenho técnico sintético com verdade conhecida
 │   │   └── extrator.py       acha peça em desenho via OpenCV clássico
@@ -199,6 +210,7 @@ python scripts/comparar_heuristicas.py
 │       └── skyline.py        perfil do horizonte, com os dois critérios de escolha
 ├── scripts/
 │   ├── sugerir_rascunho.py       CLI: imagem de rascunho -> peças sugeridas
+│   ├── gerar_peca.py             CLI: medida digitada -> DXF gerado + salvo no histórico
 │   ├── otimizar.py               CLI: DXF de peças -> DXF de plano de corte
 │   ├── ver_plano.py              renderiza um plano DXF em PNG
 │   ├── comparar_heuristicas.py   benchmark medido, com validação
