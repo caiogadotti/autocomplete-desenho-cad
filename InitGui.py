@@ -32,8 +32,10 @@ class AutocompleteCADWorkbench(Gui.Workbench):
         import comandos
 
         Gui.addCommand("Autocomplete_SugerirAresta", comandos.ComandoSugerirAresta())
-        self.appendToolbar("Autocomplete CAD", ["Autocomplete_SugerirAresta"])
-        self.appendMenu("Autocomplete CAD", ["Autocomplete_SugerirAresta"])
+        Gui.addCommand("Autocomplete_GerarPeca", comandos.ComandoGerarPeca())
+        comandos_addon = ["Autocomplete_SugerirAresta", "Autocomplete_GerarPeca"]
+        self.appendToolbar("Autocomplete CAD", comandos_addon)
+        self.appendMenu("Autocomplete CAD", comandos_addon)
 
     def Activated(self):
         pass

@@ -158,3 +158,41 @@ def escrever_plano(layout: Layout, caminho: str | Path, versao_dxf: str = "R2010
         ).set_placement((x + largura / 2, y + altura / 2), align=ezdxf.enums.TextEntityAlignment.MIDDLE_CENTER)
 
     documento.saveas(str(caminho))
+
+
+def escrever_peca_avulsa(
+    largura_mm: int,
+    altura_mm: int,
+    caminho: str | Path,
+    nome: str = "peca",
+    versao_dxf: str = "R2010",
+) -> None:
+    """Gera o DXF de uma peça só, a partir da medida digitada, sem rolo nem layout.
+
+    É o caminho inverso do resto do módulo: em vez de ler um desenho que
+    já existe, aqui a medida vem de fora (digitada, ou de uma sugestão do
+    autocomplete que o usuário aceitou) e o desenho é criado do zero. Só
+    duas camadas fazem sentido aqui, `CORTE` e `IDENT`; `SOBRA` não existe
+    porque não há rolo, é uma peça avulsa.
+    """
+    documento = ezdxf.new(versao_dxf, setup=True)
+    documento.header["$INSUNITS"] = 4  # 4 = milímetros
+    espaco = documento.modelspace()
+
+    for camada, cor in ((CAMADA_CORTE, 1), (CAMADA_IDENT, 3)):
+        if camada not in documento.layers:
+            documento.layers.add(camada, color=cor)
+
+    espaco.add_lwpolyline(
+        [(0, 0), (largura_mm, 0), (largura_mm, altura_mm), (0, altura_mm)],
+        close=True,
+        dxfattribs={"layer": CAMADA_CORTE},
+    )
+
+    altura_texto = max(8.0, min(largura_mm, altura_mm) * 0.12)
+    espaco.add_text(
+        nome,
+        dxfattribs={"layer": CAMADA_IDENT, "height": altura_texto},
+    ).set_placement((largura_mm / 2, altura_mm / 2), align=ezdxf.enums.TextEntityAlignment.MIDDLE_CENTER)
+
+    documento.saveas(str(caminho))

@@ -10,4 +10,4 @@ venv/
 .DS_Store
 Thumbs.db
 *.log
-dados/historico_pecas.json
+dados/historico_pecas.db
